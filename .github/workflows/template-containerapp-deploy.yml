@@ -24,8 +24,9 @@ jobs:
       name: ${{ inputs.envCode }}
 
     env:
-      generatedAppEnvName: "${{ inputs.envCode == 'prod' && format('{0}', vars.APP_NAME) || format('{0}{1}-ca-{2}', vars.APP_NAME, vars.INSTANCE_NUMBER, inputs.envCode) }}"
+      generatedAppEnvName: "${{ format('{0}{1}-ca-{2}', vars.APP_NAME, vars.INSTANCE_NUMBER, inputs.envCode) }}"
       generatedResourceGroupName: ${{ vars.RESOURCE_GROUP_NAME || format('{0}-{1}-{2}', vars.RESOURCE_GROUP_PREFIX, inputs.envCode, vars.INSTANCE_NUMBER) }}
+      generatedAppEnvNameProdAlias: ${{ vars.RESOURCE_GROUP_NAME || format('{0}-{1}-{2}', vars.RESOURCE_GROUP_PREFIX, inputs.envCode, vars.INSTANCE_NUMBER) }}
 
     steps:
     - name: Display Variables
