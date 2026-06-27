@@ -17,7 +17,8 @@ var sanitizedAppNameInstance = replace(replace(replace(toLower('${appName}${inst
 var resourceAbbreviations = loadJsonContent('./data/resourceAbbreviations.json')
 
 // --------------------------------------------------------------------------------
-var webSiteName         = environmentCode == 'prod' ? toLower('${sanitizedAppNameWithDashes}') : toLower('${sanitizedAppInstanceNameWithDashes}-${sanitizedEnvironment}')
+var webSiteName         = toLower('${sanitizedAppInstanceNameWithDashes}-${sanitizedEnvironment}')
+// var webSiteName         = environmentCode == 'prod' ? toLower('${sanitizedAppNameWithDashes}') : toLower('${sanitizedAppInstanceNameWithDashes}-${sanitizedEnvironment}')
 var baseStorageName     = toLower('${sanitizedAppNameInstance}${resourceAbbreviations.storageAccountSuffix}${sanitizedEnvironment}')
 
 output functionApp object = {
@@ -40,7 +41,8 @@ output userAssignedIdentityName string   = toLower('${sanitizedAppNameInstance}-
 
 // Container resources
 output containerRegistryName string      = toLower(take('${sanitizedAppNameInstance}${resourceAbbreviations.containerRegistry}${sanitizedEnvironment}', 50))
-output containerAppName string           = environmentCode == 'prod' ? toLower('${sanitizedAppNameWithDashes}${resourceAbbreviations.containerApp}') : toLower('${sanitizedAppInstanceNameWithDashes}-${resourceAbbreviations.containerApp}-${sanitizedEnvironment}')
+output containerAppName string           = toLower('${sanitizedAppInstanceNameWithDashes}-${resourceAbbreviations.containerApp}-${sanitizedEnvironment}')
+// output containerAppName string           = environmentCode == 'prod' ? toLower('${sanitizedAppNameWithDashes}${resourceAbbreviations.containerApp}') : toLower('${sanitizedAppInstanceNameWithDashes}-${resourceAbbreviations.containerApp}-${sanitizedEnvironment}')
 output containerAppsEnvironmentName string = toLower('${sanitizedAppInstanceNameWithDashes}-${resourceAbbreviations.containerAppEnvironment}-${sanitizedEnvironment}')
 
 // Key Vaults and Storage Accounts can only be 24 characters long
