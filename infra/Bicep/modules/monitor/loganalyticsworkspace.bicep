@@ -9,15 +9,15 @@ param commonTags object = {}
 // --------------------------------------------------------------------------------
 var templateTag = { TemplateFile: '~loganalytics.bicep' }
 var tags = union(commonTags, templateTag)
-var useExisting = !empty(existingLogAnalyticsWorkspaceName)
+var useExistingWorkspace = !empty(existingLogAnalyticsWorkspaceName)
 
 // --------------------------------------------------------------------------------
-resource existingLogWorkspace 'Microsoft.OperationalInsights/workspaces@2021-06-01' existing = if (useExisting) {
-  name: existingLogAnalyticsWorkspaceName
+resource existingLogWorkspaceResource 'Microsoft.OperationalInsights/workspaces@2021-06-01' existing = if (useExistingWorkspace) {
+  name: useExistingWorkspace ? existingLogAnalyticsWorkspaceName : 'placeholder'
 }
 
-resource newLogWorkspaceResource 'Microsoft.OperationalInsights/workspaces@2021-06-01' = if (!useExisting) {
-  name: logAnalyticsWorkspaceName
+resource logWorkspaceResource 'Microsoft.OperationalInsights/workspaces@2021-06-01' = if (!useExistingWorkspace) {
+  name: !useExistingWorkspace ? logAnalyticsWorkspaceName : 'placeholder'
   location: location
   tags: tags
   properties: {
@@ -40,5 +40,5 @@ resource newLogWorkspaceResource 'Microsoft.OperationalInsights/workspaces@2021-
 }
 
 // --------------------------------------------------------------------------------
-output id string = useExisting ? existingLogWorkspace.id : newLogWorkspaceResource!.id
-output name string = useExisting ? existingLogWorkspace.name : newLogWorkspaceResource!.name
+output id string = useExistingWorkspace ? existingLogWorkspaceResource.id : logWorkspaceResource.id
+output name string = useExistingWorkspace ? existingLogWorkspaceResource.name : logWorkspaceResource.name
