@@ -53,6 +53,7 @@ param existingSqlServerName string = ''
 param existingSqlDatabaseName string = ''
 param existingSqlServerResourceGroupName string = ''
 param existingLogAnalyticsWorkspaceName string = ''
+param existingLogAnalyticsWorkspaceResourceGroupName string = ''
 
 param adInstance string = environment().authentication.loginEndpoint // 'https://login.microsoftonline.com/'
 param adDomain string = ''
@@ -101,6 +102,7 @@ var existingSqlServerNameEffective = empty(trim(existingSqlServerName)) || conta
 var existingSqlDatabaseNameEffective = empty(trim(existingSqlDatabaseName)) || contains(existingSqlDatabaseName, '#{') ? '' : trim(existingSqlDatabaseName)
 var existingSqlServerRgNameEffective = empty(trim(existingSqlServerResourceGroupName)) || contains(existingSqlServerResourceGroupName, '#{') ? '' : trim(existingSqlServerResourceGroupName)
 var existingLogAnalyticsWorkspaceNameEffective = empty(trim(existingLogAnalyticsWorkspaceName)) || contains(existingLogAnalyticsWorkspaceName, '#{') ? '' : trim(existingLogAnalyticsWorkspaceName)
+var existingLogAnalyticsWorkspaceRgNameEffective = empty(trim(existingLogAnalyticsWorkspaceResourceGroupName)) || contains(existingLogAnalyticsWorkspaceResourceGroupName, '#{') ? '' : trim(existingLogAnalyticsWorkspaceResourceGroupName)
 var effectiveManagedIdentityId = createUserAssignedIdentity ? identity!.outputs.managedIdentityId : ''
 var effectiveManagedIdentityPrincipalId = createUserAssignedIdentity ? identity!.outputs.managedIdentityPrincipalId : ''
 var commonTags = {
@@ -139,6 +141,7 @@ module logAnalyticsWorkspaceModule './modules/monitor/loganalyticsworkspace.bice
   params: {
     logAnalyticsWorkspaceName: resourceNames.outputs.logAnalyticsWorkspaceName
     existingLogAnalyticsWorkspaceName: existingLogAnalyticsWorkspaceNameEffective
+    existingLogAnalyticsWorkspaceResourceGroupName: existingLogAnalyticsWorkspaceRgNameEffective
     location: location
     commonTags: commonTags
   }

@@ -31,6 +31,7 @@ param existingSqlServerName = '#{EXISTING_SQLSERVER_NAME}#'
 param existingSqlDatabaseName = '#{EXISTING_SQLDATABASE_NAME}#'
 param existingSqlServerResourceGroupName = '#{EXISTING_SQLSERVER_RESOURCE_GROUP_NAME}#'
 param existingLogAnalyticsWorkspaceName = '#{EXISTING_LOG_ANALYTICS_WORKSPACE}#'
+param existingLogAnalyticsWorkspaceResourceGroupName = '#{EXISTING_LOG_ANALYTICS_WORKSPACE_RESOURCE_GROUP_NAME}#'
 // param existingSignalRName = '#{EXISTING_SIGNALR}#'
 
 param adminUserId = '#{KEYVAULT_OWNER_USERID}#'

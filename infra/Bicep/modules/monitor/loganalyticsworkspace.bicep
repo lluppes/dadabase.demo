@@ -3,6 +3,7 @@
 // --------------------------------------------------------------------------------
 param logAnalyticsWorkspaceName string = 'myLogAnalyticsWorkspaceName'
 param existingLogAnalyticsWorkspaceName string = ''
+param existingLogAnalyticsWorkspaceResourceGroupName string = ''
 param location string = resourceGroup().location
 param commonTags object = {}
 
@@ -10,10 +11,12 @@ param commonTags object = {}
 var templateTag = { TemplateFile: '~loganalytics.bicep' }
 var tags = union(commonTags, templateTag)
 var useExistingWorkspace = !empty(existingLogAnalyticsWorkspaceName)
+var existingWorkspaceRgName = empty(existingLogAnalyticsWorkspaceResourceGroupName) ? resourceGroup().name : existingLogAnalyticsWorkspaceResourceGroupName
 
 // --------------------------------------------------------------------------------
 resource existingLogWorkspaceResource 'Microsoft.OperationalInsights/workspaces@2021-06-01' existing = if (useExistingWorkspace) {
   name: useExistingWorkspace ? existingLogAnalyticsWorkspaceName : 'placeholder'
+  scope: resourceGroup(existingWorkspaceRgName)
 }
 
 resource logWorkspaceResource 'Microsoft.OperationalInsights/workspaces@2021-06-01' = if (!useExistingWorkspace) {
