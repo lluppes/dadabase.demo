@@ -53,6 +53,8 @@ param existingSqlServerName string = ''
 param existingSqlDatabaseName string = ''
 param existingSqlServerResourceGroupName string = ''
 
+param existingLogAnalyticsWorkspaceName string = ''
+
 param adInstance string = environment().authentication.loginEndpoint // 'https://login.microsoftonline.com/'
 param adDomain string = ''
 param adTenantId string = ''
@@ -79,6 +81,9 @@ param azureOpenAIImageApiKey string = ''
 @description('Add Role Assignments for the user assigned identity?')
 param addRoleAssignments bool = true
 
+@description('Create a separate user-assigned managed identity. When false, each resource uses its own system-assigned identity.')
+param createUserAssignedIdentity bool = false
+
 @description('Add this Admin User Id to KeyVault Access')
 param adminUserId string = ''
 
@@ -96,6 +101,9 @@ var existingServicePlanRgNameEffective = empty(trim(servicePlanResourceGroupName
 var existingSqlServerNameEffective = empty(trim(existingSqlServerName)) || contains(existingSqlServerName, '#{') ? '' : trim(existingSqlServerName)
 var existingSqlDatabaseNameEffective = empty(trim(existingSqlDatabaseName)) || contains(existingSqlDatabaseName, '#{') ? '' : trim(existingSqlDatabaseName)
 var existingSqlServerRgNameEffective = empty(trim(existingSqlServerResourceGroupName)) || contains(existingSqlServerResourceGroupName, '#{') ? '' : trim(existingSqlServerResourceGroupName)
+var existingLogAnalyticsWorkspaceNameEffective = empty(trim(existingLogAnalyticsWorkspaceName)) || contains(existingLogAnalyticsWorkspaceName, '#{') ? '' : trim(existingLogAnalyticsWorkspaceName)
+var effectiveManagedIdentityId = createUserAssignedIdentity ? identity!.outputs.managedIdentityId : ''
+var effectiveManagedIdentityPrincipalId = createUserAssignedIdentity ? identity!.outputs.managedIdentityPrincipalId : ''
 var commonTags = {         
   LastDeployed: runDateTime
   Application: appName
@@ -111,9 +119,9 @@ var deployContainerAppEffective = contains(['containerapp', 'all'], deploymentTy
 var deployFunctionEffective = contains(['functionapp', 'all'], deploymentTypeNormalized) && !websiteOnly
 var keyVaultApplicationUserObjectIds = deployWebsiteEffective
   ? concat(
-      deployWebAppEffective ? [ webSiteModule!.outputs.userManagedPrincipalId, webSiteModule!.outputs.systemPrincipalId ] : [],
-      deployContainerAppEffective ? [ containerAppModule!.outputs.userManagedPrincipalId, containerAppModule!.outputs.systemPrincipalId ] : [])
-  : [ identity.outputs.managedIdentityPrincipalId ]
+      deployWebAppEffective ? (createUserAssignedIdentity ? [ webSiteModule!.outputs.userManagedPrincipalId, webSiteModule!.outputs.systemPrincipalId ] : [ webSiteModule!.outputs.systemPrincipalId ]) : [],
+      deployContainerAppEffective ? (createUserAssignedIdentity ? [ containerAppModule!.outputs.userManagedPrincipalId, containerAppModule!.outputs.systemPrincipalId ] : [ containerAppModule!.outputs.systemPrincipalId ]) : [])
+  : (createUserAssignedIdentity ? [ identity!.outputs.managedIdentityPrincipalId ] : [])
 // var resourceToken = toLower(uniqueString(resourceGroup().id, location))
 
 // --------------------------------------------------------------------------------
@@ -130,6 +138,7 @@ module logAnalyticsWorkspaceModule './modules/monitor/loganalyticsworkspace.bice
   name: 'logAnalytics${deploymentSuffix}'
   params: {
     logAnalyticsWorkspaceName: resourceNames.outputs.logAnalyticsWorkspaceName
+    existingLogAnalyticsWorkspaceName: existingLogAnalyticsWorkspaceNameEffective
     location: location
     commonTags: commonTags
   }
@@ -179,7 +188,7 @@ module sqlDbModule './modules/database/sqlserver.bicep' = if (!websiteOnly) {
     adAdminUserId: sqlAdminLoginUserId
     adAdminUserSid: sqlAdminLoginUserSid
     adAdminTenantId: sqlAdminLoginTenantId
-    userAssignedIdentityResourceId: identity.outputs.managedIdentityId
+    userAssignedIdentityResourceId: effectiveManagedIdentityId
     sqlAdminUser:sqlAdminUser
     sqlAdminPassword: sqlAdminPassword
     workspaceId: logAnalyticsWorkspaceModule.outputs.id
@@ -188,7 +197,7 @@ module sqlDbModule './modules/database/sqlserver.bicep' = if (!websiteOnly) {
 }
 
 // --------------------------------------------------------------------------------
-module identity './modules/iam/identity.bicep' = {
+module identity './modules/iam/identity.bicep' = if (createUserAssignedIdentity) {
   name: 'appIdentity${deploymentSuffix}'
   params: {
     identityName: resourceNames.outputs.userAssignedIdentityName
@@ -196,10 +205,10 @@ module identity './modules/iam/identity.bicep' = {
   }
 }
 
-module appRoleAssignments './modules/iam/roleassignments.bicep' = if (addRoleAssignments) {
+module appRoleAssignments './modules/iam/roleassignments.bicep' = if (addRoleAssignments && createUserAssignedIdentity) {
   name: 'appRoleAssignments${deploymentSuffix}'
   params: {
-    identityPrincipalId: identity.outputs.managedIdentityPrincipalId
+    identityPrincipalId: identity!.outputs.managedIdentityPrincipalId
     principalType: 'ServicePrincipal'
     storageAccountName: storageModule.outputs.name
     keyVaultName:  keyVaultModule.outputs.name
@@ -224,10 +233,10 @@ module appRoleAssignments2Container './modules/iam/roleassignments.bicep' = if (
   }
 }
 // also add rights to the function storage account
-module appRoleAssignments3 './modules/iam/roleassignments.bicep' = if (addRoleAssignments && deployFunctionEffective) {
+module appRoleAssignments3 './modules/iam/roleassignments.bicep' = if (addRoleAssignments && deployFunctionEffective && createUserAssignedIdentity) {
   name: 'appRoleAssignments-function-storage${deploymentSuffix}'
   params: {
-    identityPrincipalId: identity.outputs.managedIdentityPrincipalId
+    identityPrincipalId: identity!.outputs.managedIdentityPrincipalId
     principalType: 'ServicePrincipal'
     storageAccountName: functionStorageModule!.outputs.name
   }
@@ -241,7 +250,7 @@ module keyVaultModule './modules/security/keyvault.bicep' = {
     location: location
     commonTags: commonTags
     keyVaultOwnerUserId: adminUserId
-    adminUserObjectIds: [ identity.outputs.managedIdentityPrincipalId ]
+    adminUserObjectIds: createUserAssignedIdentity ? [ identity!.outputs.managedIdentityPrincipalId ] : []
     applicationUserObjectIds: keyVaultApplicationUserObjectIds
     workspaceId: logAnalyticsWorkspaceModule.outputs.id
     publicNetworkAccess: 'Enabled'
@@ -296,8 +305,8 @@ module containerAppModule './modules/container/containerapp.bicep' = if (deployC
     containerAppsEnvironmentId: containerAppsEnvironmentModule!.outputs.id
     containerImage: effectiveContainerImage
     containerRegistryServer: containerRegistryModule!.outputs.loginServer
-    managedIdentityId: identity.outputs.managedIdentityId
-    managedIdentityPrincipalId: identity.outputs.managedIdentityPrincipalId
+    managedIdentityId: effectiveManagedIdentityId
+    managedIdentityPrincipalId: effectiveManagedIdentityPrincipalId
     workspaceId: logAnalyticsWorkspaceModule.outputs.id
     minReplicas: 1
     maxReplicas: 3
@@ -356,8 +365,8 @@ module webSiteModule './modules/webapp/website.bicep' = if (deployWebAppEffectiv
     commonTags: commonTags
     environmentCode: environmentCode
     webAppKind: webAppKind
-    managedIdentityId: identity.outputs.managedIdentityId
-    managedIdentityPrincipalId: identity.outputs.managedIdentityPrincipalId
+    managedIdentityId: effectiveManagedIdentityId
+    managedIdentityPrincipalId: effectiveManagedIdentityPrincipalId
     workspaceId: logAnalyticsWorkspaceModule.outputs.id
     appServicePlanName: appServicePlanModule!.outputs.name
     appServicePlanResourceGroupName: appServicePlanModule!.outputs.resourceGroupName
