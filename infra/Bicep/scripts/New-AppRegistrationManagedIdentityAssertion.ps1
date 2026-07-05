@@ -3,8 +3,15 @@
 # redirect URIs and configures it for Microsoft.Identity.Web
 # SignedAssertionFromManagedIdentity.
 #
+# This adds a "managed-identity-assertion" to the federated credentials of the app registration
+#
 # The created app registration has no client secret and no certificate. The app
 # proves its identity by using a Managed Identity token as a signed assertion.
+#
+# -ManagedIdentityObjectId is required for the federated credential subject. 
+# -ManagedIdentityClientId is only needed when you are using a user-assigned managed identity 
+# so Microsoft.Identity.Web knows which managed identity to request tokens from.
+# For a system-assigned identity, leave -ManagedIdentityClientId blank.
 #
 # Example: create one shared app registration for multiple environments
 #   .\New-AppRegistrationManagedIdentityAssertion.ps1 `

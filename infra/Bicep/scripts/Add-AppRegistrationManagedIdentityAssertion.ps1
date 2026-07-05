@@ -3,10 +3,17 @@
 # registration so Microsoft.Identity.Web can use SignedAssertionFromManagedIdentity
 # instead of a client secret or certificate.
 #
+# This adds a "managed-identity-assertion" to the federated credentials of the app registration
+#
 # The script can also merge web redirect URIs and optionally apply the required
 # AzureAD__ClientCredentials app settings to one Azure App Service. The App
 # Service update is optional; use it only when you want this script to update a
 # specific deployed app after changing the shared app registration.
+#
+# -ManagedIdentityObjectId is required for the federated credential subject. 
+# -ManagedIdentityClientId is only needed when you are using a user-assigned managed identity 
+# so Microsoft.Identity.Web knows which managed identity to request tokens from.
+# For a system-assigned identity, leave -ManagedIdentityClientId blank.
 #
 # Example: one shared app registration for multiple environments
 #   .\Add-AppRegistrationManagedIdentityAssertion.ps1 `
