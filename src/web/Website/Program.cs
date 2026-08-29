@@ -6,6 +6,7 @@ using DadABase.Data.Models;
 using DadABase.Data.Repositories;
 using DadABase.Web.Repositories;
 using Microsoft.OpenApi;
+using DadABase.Web.Helpers;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -44,13 +45,17 @@ builder.Services.AddSingleton<DefaultAzureCredential>(provider =>
     var visualStudioTenantId = builder.Configuration["VisualStudioTenantId"];
     if (!string.IsNullOrEmpty(visualStudioTenantId))
     {
-        Console.WriteLine($"Overwriting tenant for local development credentials...");
+        Console.WriteLine($"[DIAGNOSTIC] Overwriting tenant for local development credentials. TenantId: {visualStudioTenantId}");
         creds = new DefaultAzureCredential(new DefaultAzureCredentialOptions
         {
             ExcludeEnvironmentCredential = true,
             ExcludeManagedIdentityCredential = true,
             TenantId = visualStudioTenantId
         });
+    }
+    else
+    {
+        Console.WriteLine("[DIAGNOSTIC] VisualStudioTenantId not configured - using DefaultAzureCredential with full credential chain (including Managed Identity)");
     }
     return creds;
 });
@@ -108,6 +113,7 @@ else
     builder.Services.AddSingleton<IJokeRepository>(sp => new JokeJsonRepository(jsonFilePath));
 }
 
+builder.Services.AddAiServices(builder.Configuration);
 builder.Services.AddSingleton<IAIHelper, AIHelper>();
 builder.Services.AddSingleton<IJokeImageQueue, JokeImageQueue>();
 builder.Services.AddHostedService<JokeImageQueueService>();
@@ -227,6 +233,11 @@ if (enableAuth)
     app.UseAuthentication();
     app.UseAuthorization();
 }
+
+// Set invariant culture to prevent culture-related exceptions during server-side rendering
+var cultureInfo = System.Globalization.CultureInfo.GetCultureInfo("en-US");
+System.Globalization.CultureInfo.DefaultThreadCurrentCulture = cultureInfo;
+System.Globalization.CultureInfo.DefaultThreadCurrentUICulture = cultureInfo;
 
 app.MapControllers();
 app.MapBlazorHub();
