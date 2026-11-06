@@ -27,6 +27,7 @@ jobs:
 
     env:
       artifactName: webapp
+      # generatedAppEnvName: ${{ vars.APP_NAME }}-${{ inputs.envCode }}
       generatedAppEnvName: "${{ inputs.envCode == 'prod' && format('{0}', vars.APP_NAME) || format('{0}{1}-{2}', vars.APP_NAME, vars.INSTANCE_NUMBER, inputs.envCode) }}"
 
     steps:
@@ -52,7 +53,7 @@ jobs:
       uses: Azure/webapps-deploy@v2
       with:
         app-name: ${{ env.generatedAppEnvName }}
-        package: '.'
+        package: .
 
     - name: Logout and cleanup
       shell: bash

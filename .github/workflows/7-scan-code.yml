@@ -13,7 +13,7 @@ on:
         type: boolean
       runGHASScan:
         description: Run GitHub Advanced Security Scan
-        default: true
+        default: false
         type: boolean
       runSBOM:
         description: Run SBOM Report Generator
@@ -28,7 +28,7 @@ on:
     # temporarily -- run this every weekday at 3am even if no pushes or PRs
     # - cron: '0 3 * * 1-5'
     # # run this once a month on the 1st day of the month even if no pushes or PRs
-    - cron: '0 0 2 * *'
+    - cron: '0 0 7 * *'
     
 # ------------------------------------------------------------------------------------------------------------------------
 permissions:

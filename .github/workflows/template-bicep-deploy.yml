@@ -76,6 +76,7 @@ jobs:
     # ------------------------------------------------------------------------------------------------------------------------
     env:
       envCode: ${{ inputs.envCode }}
+      # generatedAppEnvName: ${{ vars.APP_NAME }}-${{ inputs.envCode }}
       generatedAppEnvName: ${{ inputs.envCode == 'prod' && vars.APP_NAME || format('{0}-{1}-{2}', vars.APP_NAME, inputs.envCode, vars.INSTANCE_NUMBER) }}
       generatedResourceGroupName: ${{ vars.RESOURCE_GROUP_NAME || format('{0}-{1}-{2}', vars.RESOURCE_GROUP_PREFIX, inputs.envCode, vars.INSTANCE_NUMBER) }}
       DEPLOYMENT_TYPE: ${{ inputs.deploymentType }}
